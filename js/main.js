@@ -8,8 +8,8 @@ gameScene.init = function () {
   this.jumpSpeed = -600;
 
   // world limits
-  this.gameWidth = 600;
-  this.gameHeight = 800;
+  this.gameWidth = 360;
+  this.gameHeight = 700;
 };
 
 // load asset files for our game
@@ -42,38 +42,55 @@ gameScene.preload = function () {
 // executed once, after assets were loaded
 gameScene.create = function () {
   // walking animation
-  this.anims.create({
-    key: 'walking',
-    frames: this.anims.generateFrameNames('player', {
-      frames: [0, 1, 2],
-    }),
-    frameRate: 12,
-    yoyo: true,
-    repeat: -1,
-  });
 
-  // fire animation
-  this.anims.create({
-    key: 'burning',
-    frames: this.anims.generateFrameNames('fire', {
-      frames: [0, 1],
-    }),
-    frameRate: 4,
-    repeat: -1,
-  });
+  if (!this.anims.get('walking')) {
+    this.anims.create({
+      key: 'walking',
+      frames: this.anims.generateFrameNames('player', {
+        frames: [0, 1, 2],
+      }),
+      frameRate: 12,
+      yoyo: true,
+      repeat: -1,
+    });
+  }
 
-  // world bounds
-  this.physics.world.bounds.width = this.gameWidth;
-  this.physics.world.bounds.height = this.gameHeight;
-
-  this.platforms = this.add.group();
+  if (!this.anims.get('burning')) {
+    // fire animation
+    this.anims.create({
+      key: 'burning',
+      frames: this.anims.generateFrameNames('fire', {
+        frames: [0, 1],
+      }),
+      frameRate: 4,
+      repeat: -1,
+    });
+  }
 
   // add all level elements
   this.setupLevel();
 
+  // initiate barrel spawner
+  this.setupSpawner();
+
+  // world bounds
+  this.physics.world.bounds.width = this.levelData.world.width;
+  this.physics.world.bounds.height = this.levelData.world.height;
+
   // collision detection
-  this.physics.add.collider(this.player, this.platforms);
-  this.physics.add.collider(this.goal, this.platforms);
+  this.physics.add.collider(
+    [this.player, this.goal, this.barrels],
+    this.platforms
+  );
+
+  // overlap checks
+  this.physics.add.overlap(
+    this.player,
+    [this.fires, this.goal, this.barrels],
+    this.restartGame,
+    null,
+    this
+  );
 
   // enable cursor keys
   this.cursors = this.input.keyboard.createCursorKeys();
@@ -136,7 +153,7 @@ gameScene.setupLevel = function () {
   this.levelData = this.cache.json.get('levelData');
 
   // create all the platforms
-  this.platforms = this.add.group();
+  this.platforms = this.physics.add.staticGroup();
   for (let i = 0; i < this.levelData.platforms.length; i++) {
     let curr = this.levelData.platforms[i];
 
@@ -163,16 +180,15 @@ gameScene.setupLevel = function () {
   }
 
   // create all the fires
-  this.fires = this.add.group();
+  this.fires = this.physics.add.group({
+    allowGravity: false,
+    immovable: true,
+  });
+
   for (let i = 0; i < this.levelData.fires.length; i++) {
     let curr = this.levelData.fires[i];
 
     let newObj = this.add.sprite(curr.x, curr.y, 'fire').setOrigin(0);
-
-    // enable physics
-    this.physics.add.existing(newObj);
-    newObj.body.allowGravity = false;
-    newObj.body.imovable = true;
 
     // play burning animation
     newObj.anims.play('burning');
@@ -205,6 +221,15 @@ gameScene.setupLevel = function () {
   // constrain player to game bounds
   this.player.body.setCollideWorldBounds(true);
 
+  // camera bounds
+  this.cameras.main.setBounds(
+    0,
+    0,
+    this.levelData.world.width,
+    this.levelData.world.height
+  );
+  this.cameras.main.startFollow(this.player);
+
   // goal
   this.goal = this.add.sprite(
     this.levelData.goal.x,
@@ -212,6 +237,55 @@ gameScene.setupLevel = function () {
     'goal'
   );
   this.physics.add.existing(this.goal);
+};
+
+// restart game(game over + you won!)
+gameScene.restartGame = function (sourceSprite, targetSprite) {
+  // fade out
+  this.cameras.main.fade(500);
+
+  // when fade outcompletes, restart scene
+  this.cameras.main.on(
+    'camerafadeoutcomplete',
+    function (camera, effect) {
+      // restart the scene
+      this.scene.restart();
+    },
+    this
+  );
+};
+
+// generation of barrels
+gameScene.setupSpawner = function () {
+  // barrel group
+  this.barrels = this.physics.add.group({
+    bounceY: 0.1,
+    bounceX: 1,
+    collideWorldBounds: true,
+  });
+
+  // spawn the barrels
+  let spawningEvent = this.time.addEvent({
+    delay: this.levelData.spawner.interval,
+    loop: true,
+    callbackScope: this,
+    callback: function () {
+      // create a barrel
+      let barrel = this.barrels.create(this.goal.x, this.goal.y, 'barrel');
+
+      // set properties
+      barrel.setVelocityX(this.levelData.spawner.speed);
+      // lifespan
+      this.time.addEvent({
+        delay: this.levelData.spawner.lifespan,
+        repeat: 0,
+        callbackScope: this,
+        callback: function () {
+          barrel.destroy();
+        },
+      });
+    },
+  });
 };
 
 // our game's configuration
