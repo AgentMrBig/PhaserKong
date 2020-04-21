@@ -1,0 +1,73 @@
+{
+  "player": {
+    "x": 150,
+    "y": 400
+  },
+  "goal": {
+    "x": 30,
+    "y": 65
+  },
+  "platforms": [
+    {
+      "x": 0,
+      "y": 90,
+      "numTiles": 4,
+      "key": "block"
+    },
+    {
+      "x": 72,
+      "y": 150,
+      "numTiles": 6,
+      "key": "block"
+    },
+    {
+      "x": 0,
+      "y": 250,
+      "numTiles": 3,
+      "key": "block"
+    },
+    {
+      "x": 250,
+      "y": 250,
+      "numTiles": 3,
+      "key": "block"
+    },
+    {
+      "x": 108,
+      "y": 350,
+      "numTiles": 4,
+      "key": "block"
+    },
+    {
+      "x": 72,
+      "y": 450,
+      "numTiles": 6,
+      "key": "block"
+    },
+    {
+      "x": 0,
+      "y": 560,
+      "numTiles": 1,
+      "key": "ground"
+    }
+  ],
+
+  "fires": [
+    {
+      "x": 261,
+      "y": 127
+    },
+    {
+      "x": 40,
+      "y": 228
+    },
+    {
+      "x": 295,
+      "y": 229
+    },
+    {
+      "x": 83,
+      "y": 428
+    }
+  ]
+}
