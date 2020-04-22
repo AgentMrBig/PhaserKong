@@ -271,7 +271,13 @@ gameScene.setupSpawner = function () {
     callbackScope: this,
     callback: function () {
       // create a barrel
-      let barrel = this.barrels.create(this.goal.x, this.goal.y, 'barrel');
+
+      let barrel = this.barrels.get(this.goal.x, this.goal.y, 'barrel');
+
+      // reaactivate
+      barrel.setActive(true);
+      barrel.setVisible(true);
+      barrel.body.enable = true;
 
       // set properties
       barrel.setVelocityX(this.levelData.spawner.speed);
@@ -281,7 +287,8 @@ gameScene.setupSpawner = function () {
         repeat: 0,
         callbackScope: this,
         callback: function () {
-          barrel.destroy();
+          barrel.barrels.killAndHide(barrel);
+          barrel.body.enable = false;
         },
       });
     },
